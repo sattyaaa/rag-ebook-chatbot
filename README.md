@@ -28,10 +28,7 @@ Strict grounding is enforced: if the retrieved context does not contain the answ
 python -m venv .venv
 
 # Activate virtual environment
-# Windows:
 .venv\Scripts\activate
-# Mac/Linux:
-source .venv/bin/activate
 
 # Install requirements
 pip install -r requirements.txt
@@ -46,7 +43,6 @@ GROQ_API_KEY="your_groq_api_key"
 PINECONE_API_KEY="your_pinecone_api_key"
 HF_HUB_OFFLINE=1
 ```
-*(Note: `HF_HUB_OFFLINE=1` forces HuggingFace to use the local model cache once downloaded, bypassing Hub checking and dramatically speeding up startup times.)*
 
 ### 3) Ingest the PDF
 
@@ -106,28 +102,24 @@ flowchart TD
 ```
 
 ### LangGraph Design Details
-- **`RagState`:** Tracks the current state of the execution (`question`, `search_query`, `context`, `chunks`, `confidence`, and `final_answer`).
-- **`route_input` Conditional Edge:** Evaluates the user query first. It queries `llama-3.1-8b-instant` to check if it's a greeting/casual conversation or a domain question. Routes to `greeting_node` if it is a greeting, otherwise routes to `generate_hyde`.
-- **`greeting_node` Node:** Returns a friendly static greeting asking the user to query about the book/PDF.
-- **`generate_hyde` Node:** Invokes a lightweight LLM (`llama-3.1-8b-instant`) to generate a hypothetical passage answering the user's question, which is stored in `search_query`.
-- **`retrieve` Node:** Queries the Pinecone database using cosine similarity. It extracts the top candidate chunks (7 chunks) using the generated hypothetical passage as the search query.
-- **`route` Conditional Edge:** Inspects the similarity score of the best retrieved chunk. If the score is less than `0.50`, it routes to the `fallback` node to prevent hallucinations. Otherwise, it routes to `generate`.
-- **`generate` Node:** Formulates a prompt combining the user's question and all 7 retrieved context chunks, passing it to `llama-3.3-70b-versatile` hosted on Groq with instructions to answer strictly from the context.
-- **`fallback` Node:** Instantly returns the message: *"I don't know based on the provided PDF. What can I help you with? Please ask questions from the PDF."*
+- **`RagState`:** Manages graph state variables (query, context, similarity score, final answer).
+- **`route_input` (Edge):** Uses `llama-3.1-8b-instant` to route greetings to `greeting_node` and content queries to `generate_hyde`.
+- **`greeting_node`:** Instantly returns a static greeting message.
+- **`generate_hyde`:** Uses `llama-3.1-8b-instant` to produce a hypothetical answering passage (`search_query`).
+- **`retrieve`:** Queries Pinecone with the HyDE document to retrieve the top 7 matching chunks.
+- **`route` (Edge):** Directs to `generate` if the top similarity score is `≥ 0.50`, otherwise falls back to `fallback`.
+- **`generate`:** Formulates the final response using `llama-3.3-70b-versatile` with the retrieved chunks.
+- **`fallback`:** Returns the standard out-of-context fallback message.
 
 ---
 
 ## Sample Queries
 
-Here are 5–6 sample queries you can use to test the chatbot's RAG grounding capabilities:
-
-1. **`What are the core components of an Agentic AI system?`**
-   *(Tests context retrieval and structured grounding for core definitions.)*
-2. **`What is the difference between single-agent and multi-agent systems?`**
-   *(Tests detailed concept comparison.)*
-3. **`Explain the role of memory in AI agents.`**
-   *(Tests explanation capabilities of specific technical concepts in the book.)*
-4. **`What are the key design patterns or challenges of Agentic AI?`**
-   *(Tests retrieval across multiple pages/paragraphs.)*
-5. **`Who won the 2022 FIFA World Cup?`**
-   *(Tests the strict grounding feature. Since this is outside knowledge not in the PDF, the chatbot must refuse to answer and return: "I don't know based on the provided PDF. What can I help you with? Please ask questions from the PDF.")*
+1. **`How agentic AI and LLMs work together`**
+2. **`Discuss terminology maze in agentic AI`**
+3. **`What are some Agentic AI Use cases`**
+4. **`What are the defining characteristics of Agentic AI`**
+5. **`What Are Multi-Agent Systems?`**
+6. **`List all layers in agentic AI system`**
+7. **`What do you mean by orchestration in AI agents`**
+8. **`What are the challenges of Orchestrating Complex Agentic Systems`**
