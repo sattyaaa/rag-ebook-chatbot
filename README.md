@@ -21,10 +21,12 @@ Strict grounding is enforced: if the retrieved context does not contain the answ
 
 ## Setup & Running
 
+This project requires **Python 3.13.14** (or any version `>= 3.12` and `< 3.14`).
+
 ### 1) Create Environment & Install Dependencies
 
 ```bash
-# Create a virtual environment
+# Create a virtual environment (ensure Python 3.13.x is used)
 python -m venv .venv
 
 # Activate virtual environment
